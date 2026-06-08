@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Список покупок</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+        button {
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Мой список покупок</h2>
+
+<div class="form-group">
+    <input type="text" id="itemName" placeholder="Что нужно купить?">
+    <button onclick="addItem()">Добавить</button>
+</div>
+
+<div id="shoppingList"></div>
+
+<script>
+    const API_URL = '/api/items';
+
+    async function loadItems() {
+        const response = await fetch(API_URL);
+        const items = await response.json();
+
+        const container = document.getElementById('shoppingList');
+        container.innerHTML = ''; // Очищаем старый список
+
+        items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'item-row';
+
+            const textSpan = document.createElement('span');
+            textSpan.textContent = item.name;
+            if (item.completed) {
+                textSpan.className = 'completed';
+            }
+
+
+            const btnContainer = document.createElement('div');
+
+            const toggleBtn = document.createElement('button');
+            toggleBtn.textContent = item.completed ? '↩' : '✓';
+            toggleBtn.onclick = () => toggleItem(item.id);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = '❌';
+            deleteBtn.onclick = () => deleteItem(item.id);
+
+            btnContainer.appendChild(toggleBtn);
+            btnContainer.appendChild(deleteBtn);
+
+            row.appendChild(textSpan);
+            row.appendChild(btnContainer);
+
+            container.appendChild(row);
+        });
+    }
+
+    async function addItem() {
+        const input = document.getElementById('itemName');
+        const name = input.value.trim();
+        if (!name) return;
+
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name })
+        });
+
+        input.value = '';
+        loadItems(); // Обновляем UI
+    }
+
+    async function toggleItem(id) {
+        await fetch(`${API_URL}/${id}/toggle`, {
+            method: 'PATCH'
+        });
+        loadItems();
+    }
+
+    async function deleteItem(id) {
+        await fetch(`${API_URL}/${id}`, {
+            method: 'DELETE'
+        });
+        loadItems();
+    }
+
+    loadItems();
+</script>
+</body>
+</html>
